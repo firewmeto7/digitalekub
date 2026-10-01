@@ -3,7 +3,22 @@
 import { useEffect, useState } from "react";
 import type { ServiceHealth } from "@digitalekub/shared-types";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+function getApiUrl() {
+  if (configuredApiUrl) {
+    return configuredApiUrl.replace(/\/$/, "");
+  }
+
+  if (typeof window !== "undefined") {
+    const forwardedHost = window.location.hostname.match(/^(.*)-3000\.app\.github\.dev$/);
+    if (forwardedHost) {
+      return `${window.location.protocol}//${forwardedHost[1]}-4000.app.github.dev`;
+    }
+  }
+
+  return "http://localhost:4000";
+}
 
 export default function Home() {
   const [health, setHealth] = useState<ServiceHealth | null>(null);
@@ -12,7 +27,10 @@ export default function Home() {
   async function checkServices() {
     setChecking(true);
     try {
-      const response = await fetch(`${apiUrl}/health`, { cache: "no-store" });
+      const response = await fetch(`${getApiUrl()}/health`, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Health check failed with HTTP ${response.status}`);
+      }
       setHealth(await response.json());
     } catch {
       setHealth(null);
