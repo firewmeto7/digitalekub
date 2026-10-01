@@ -9,18 +9,14 @@ import {
   Param,
   Patch,
   Post,
-  StreamableFile,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { UserRole } from "@prisma/client";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
-import { Roles } from "../auth/decorators/roles.decorator";
 import { AuthenticatedUser } from "../auth/guards/jwt-auth.guard";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { RolesGuard } from "../auth/guards/roles.guard";
 import {
   CreatePaymentAccountDto,
   PatchProviderDto,
@@ -92,28 +88,4 @@ export class ProvidersController {
     return this.providersService.deletePaymentAccount(user, id);
   }
 
-  @Get("pending")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  getPending() {
-    return this.providersService.getPending();
-  }
-
-  @Get(":id/id-image")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  async getIdImage(@Param("id") providerId: string) {
-    const image = await this.providersService.getIdImage(providerId);
-    return new StreamableFile(image.data, {
-      type: image.mimeType,
-      disposition: `inline; filename="provider-${providerId}-id-image"`,
-    });
-  }
-
-  @Patch(":id/approve")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  approve(@CurrentUser() admin: AuthenticatedUser, @Param("id") providerId: string) {
-    return this.providersService.approve(admin, providerId);
-  }
 }

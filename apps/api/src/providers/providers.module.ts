@@ -10,5 +10,6 @@ import { ProvidersService } from "./providers.service";
   imports: [AuthModule, PrismaModule],
   controllers: [ProvidersController],
   providers: [ProvidersService, JwtAuthGuard, RolesGuard],
+  exports: [ProvidersService],
 })
 export class ProvidersModule {}

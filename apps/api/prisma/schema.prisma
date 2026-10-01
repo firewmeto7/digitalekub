@@ -105,6 +105,7 @@ model Provider {
   phone           String                   @unique
   status          ProviderStatus           @default(PENDING)
   verifiedAt      DateTime?                @map("verified_at")
+  rejectionReason String?                  @map("rejection_reason")
   businessName    String?                  @map("business_name")
   ownerName       String?                  @map("owner_name")
   licenseNumber   String?                  @unique @map("license_number")

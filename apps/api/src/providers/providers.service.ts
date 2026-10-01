@@ -21,6 +21,7 @@ const providerResponse = {
   phone: true,
   status: true,
   verifiedAt: true,
+  rejectionReason: true,
   businessName: true,
   ownerName: true,
   licenseNumber: true,
@@ -66,6 +67,7 @@ export class ProvidersService {
           city: input.city.trim(),
           region: input.region.trim(),
           status: ProviderStatus.PENDING,
+          rejectionReason: null,
         },
         select: providerResponse,
       });
@@ -175,27 +177,16 @@ export class ProvidersService {
     if (!provider) {
       throw new NotFoundException("Provider not found");
     }
-    if (
-      provider.verifiedAt === null ||
-      !provider.businessName ||
-      !provider.ownerName ||
-      !provider.licenseNumber ||
-      !provider.idImageData ||
-      !provider.address ||
-      !provider.city ||
-      !provider.region
-    ) {
-      throw new ConflictException("Provider KYC must be complete before approval");
-    }
     if (provider.status === ProviderStatus.APPROVED) {
-      return { provider: { id: provider.id, status: provider.status } };
+      return { provider: { id: provider.id, status: provider.status, verifiedAt: provider.verifiedAt } };
     }
 
-    const [, log] = await this.prisma.$transaction([
+    const verifiedAt = provider.verifiedAt ?? new Date();
+    const [updated, log] = await this.prisma.$transaction([
       this.prisma.provider.update({
         where: { id: provider.id },
-        data: { status: ProviderStatus.APPROVED },
-        select: { id: true, status: true },
+        data: { status: ProviderStatus.APPROVED, verifiedAt, rejectionReason: null },
+        select: { id: true, status: true, verifiedAt: true },
       }),
       this.prisma.adminLog.create({
         data: {
@@ -203,11 +194,44 @@ export class ProvidersService {
           action: "PROVIDER_APPROVED",
           entity: "Provider",
           entityId: provider.id,
-          details: { previousStatus: provider.status, status: ProviderStatus.APPROVED },
+          details: { previousStatus: provider.status, status: ProviderStatus.APPROVED, verifiedAt },
         },
       }),
     ]);
-    return { provider: { id: provider.id, status: ProviderStatus.APPROVED }, adminLogId: log.id };
+    return { provider: updated, adminLogId: log.id };
+  }
+
+  async reject(admin: AuthenticatedUser, providerId: string, reason: string) {
+    const provider = await this.prisma.provider.findUnique({ where: { id: providerId } });
+    if (!provider) {
+      throw new NotFoundException("Provider not found");
+    }
+    if (provider.status === ProviderStatus.APPROVED) {
+      throw new ConflictException("An approved provider cannot be rejected");
+    }
+
+    const normalizedReason = reason.trim();
+    const [updated, log] = await this.prisma.$transaction([
+      this.prisma.provider.update({
+        where: { id: provider.id },
+        data: { status: ProviderStatus.REJECTED, rejectionReason: normalizedReason },
+        select: { id: true, status: true, rejectionReason: true },
+      }),
+      this.prisma.adminLog.create({
+        data: {
+          adminId: admin.sub,
+          action: "PROVIDER_REJECTED",
+          entity: "Provider",
+          entityId: provider.id,
+          details: {
+            previousStatus: provider.status,
+            status: ProviderStatus.REJECTED,
+            reason: normalizedReason,
+          },
+        },
+      }),
+    ]);
+    return { provider: updated, adminLogId: log.id };
   }
 
   private async findOwnProvider<T extends object = typeof providerResponse>(
@@ -228,12 +252,13 @@ export class ProvidersService {
   }
 
   private serializeProvider(provider: Record<string, any>) {
-    const { businessName, ownerName, licenseNumber, idImageMimeType, ...rest } = provider;
+    const { businessName, ownerName, licenseNumber, idImageMimeType, rejectionReason, ...rest } = provider;
     return {
       ...rest,
       business_name: businessName,
       owner_name: ownerName,
       license_number: licenseNumber,
+      rejection_reason: rejectionReason,
       has_id_image: Boolean(idImageMimeType),
       id_image_mime_type: idImageMimeType,
     };
