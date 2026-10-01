@@ -1,0 +1,10 @@
+{
+  "name": "digitalekub",
+  "private": true,
+  "packageManager": "pnpm@12.3.4",
+  "scripts": {
+    "build": "pnpm --filter @digitalekub/shared-types build && pnpm --filter api build && pnpm --filter web build",
+    "dev:api": "pnpm --filter api start:dev",
+    "dev:web": "pnpm --filter web dev"
+  }
+}
