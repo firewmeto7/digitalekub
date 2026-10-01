@@ -53,3 +53,9 @@ curl -X POST http://localhost:4000/auth/register \
 ```
 
 Use the logged OTP with `{"identifier":"+251911000010","otp":"123456"}` at `/auth/verify-otp`, then log in with `{"identifier":"+251911000010","password":"ProviderPass123!"}`. Send refresh tokens to `/auth/refresh` or `/auth/logout`; send the account identifier to `/auth/forgot-password`, then the logged development OTP and `newPassword` to `/auth/reset-password`.
+
+## Provider profiles
+
+Use a provider bearer access token for `POST /providers/register` (multipart KYC), `GET` or `PATCH /providers/me`, and the `/providers/me/payment-accounts` routes. KYC requires `business_name`, `owner_name`, `license_number`, `address`, `city`, `region`, and an `id_image` JPEG, PNG, or WebP file up to 5 MiB. Review starts in `PENDING`; only an admin can inspect `GET /providers/pending`, retrieve `GET /providers/:id/id-image`, or approve with `PATCH /providers/:id/approve`. Provider-role authorization requires both phone verification and `APPROVED` status.
+
+Payment account creation accepts the text fields `method_type`, `account_name`, `account_number`, and `instructions`. These account details are displayed for manual transfer handling.

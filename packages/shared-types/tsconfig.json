@@ -3,6 +3,7 @@
     "declaration": true,
     "module": "CommonJS",
     "outDir": "dist",
+    "rootDir": "src",
     "strict": true,
     "target": "ES2022"
   },

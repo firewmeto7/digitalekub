@@ -15,6 +15,6 @@ if (!jwtSecret || Buffer.byteLength(jwtSecret) < 32) {
   imports: [PrismaModule, JwtModule.register({ secret: jwtSecret })],
   controllers: [AuthController],
   providers: [AuthService, JwtAuthGuard, RolesGuard],
-  exports: [JwtAuthGuard, RolesGuard],
+  exports: [JwtModule, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

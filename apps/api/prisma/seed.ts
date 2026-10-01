@@ -22,17 +22,17 @@ async function main() {
 
   const provider = await prisma.provider.upsert({
     where: { userId: providerUser.id },
-    update: { displayName: "Demo Provider", phone: "+251911000001", status: ProviderStatus.APPROVED },
-    create: { userId: providerUser.id, displayName: "Demo Provider", phone: "+251911000001", status: ProviderStatus.APPROVED },
+    update: { displayName: "Demo Provider", phone: "+251911000001", status: ProviderStatus.APPROVED, verifiedAt: new Date() },
+    create: { userId: providerUser.id, displayName: "Demo Provider", phone: "+251911000001", status: ProviderStatus.APPROVED, verifiedAt: new Date() },
   });
 
   const accounts = [
-    { accountName: "Demo Provider", institution: "Bank transfer", accountNumber: "100000000001", phoneNumber: null, isPrimary: true },
-    { accountName: "Demo Provider", institution: "Mobile transfer", accountNumber: "100000000002", phoneNumber: "+251911000001", isPrimary: false },
+    { accountName: "Demo Provider", methodType: "Bank transfer", accountNumber: "100000000001", instructions: "Use the account number as the manual transfer destination.", isPrimary: true },
+    { accountName: "Demo Provider", methodType: "Mobile transfer", accountNumber: "100000000002", instructions: "Send the transfer manually and include your ticket number.", isPrimary: false },
   ];
 
   for (const account of accounts) {
-    const id = `${provider.id}-${account.institution.toLowerCase().replaceAll(" ", "-")}`;
+    const id = `${provider.id}-${account.methodType.toLowerCase().replaceAll(" ", "-")}`;
     await prisma.providerPaymentAccount.upsert({
       where: { id },
       update: account,

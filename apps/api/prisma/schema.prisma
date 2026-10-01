@@ -81,36 +81,44 @@ enum DisputeStatus {
 }
 
 model User {
-  id                String         @id @default(cuid())
-  email             String         @unique
-  passwordHash      String         @map("password_hash")
-  fullName          String         @map("full_name")
-  role              UserRole
-  provider          Provider?
-  verifiedPayments  Payment[]      @relation("PaymentVerifier")
-  announcedResults  Result[]       @relation("ResultAnnouncer")
-  notifications     Notification[]
-  adminLogs         AdminLog[]
-  resolvedDisputes  Dispute[]      @relation("DisputeResolver")
-  createdAt         DateTime       @default(now()) @map("created_at")
-  updatedAt         DateTime       @updatedAt @map("updated_at")
+  id               String         @id @default(cuid())
+  email            String         @unique
+  passwordHash     String         @map("password_hash")
+  fullName         String         @map("full_name")
+  role             UserRole
+  provider         Provider?
+  verifiedPayments Payment[]      @relation("PaymentVerifier")
+  announcedResults Result[]       @relation("ResultAnnouncer")
+  notifications    Notification[]
+  adminLogs        AdminLog[]
+  resolvedDisputes Dispute[]      @relation("DisputeResolver")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
 
   @@map("users")
 }
 
 model Provider {
-  id               String                  @id @default(cuid())
-  userId           String                  @unique @map("user_id")
-  displayName      String                  @map("display_name")
-  phone            String                  @unique
-  status           ProviderStatus          @default(PENDING)
-  verifiedAt       DateTime?               @map("verified_at")
-  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  paymentAccounts  ProviderPaymentAccount[]
-  lotteries        Lottery[]
-  reviews          Review[]
-  createdAt        DateTime                @default(now()) @map("created_at")
-  updatedAt        DateTime                @updatedAt @map("updated_at")
+  id              String                   @id @default(cuid())
+  userId          String                   @unique @map("user_id")
+  displayName     String                   @map("display_name")
+  phone           String                   @unique
+  status          ProviderStatus           @default(PENDING)
+  verifiedAt      DateTime?                @map("verified_at")
+  businessName    String?                  @map("business_name")
+  ownerName       String?                  @map("owner_name")
+  licenseNumber   String?                  @unique @map("license_number")
+  idImageData     Bytes?                   @map("id_image_data")
+  idImageMimeType String?                  @map("id_image_mime_type")
+  address         String?
+  city            String?
+  region          String?
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentAccounts ProviderPaymentAccount[]
+  lotteries       Lottery[]
+  reviews         Review[]
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  updatedAt       DateTime                 @updatedAt @map("updated_at")
 
   @@map("providers")
 }
@@ -118,10 +126,10 @@ model Provider {
 model ProviderPaymentAccount {
   id            String   @id @default(cuid())
   providerId    String   @map("provider_id")
+  methodType    String   @map("method_type")
   accountName   String   @map("account_name")
-  institution   String
   accountNumber String   @map("account_number")
-  phoneNumber   String?  @map("phone_number")
+  instructions  String
   isPrimary     Boolean  @default(false) @map("is_primary")
   provider      Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now()) @map("created_at")
@@ -131,17 +139,17 @@ model ProviderPaymentAccount {
 }
 
 model Lottery {
-  id            String        @id @default(cuid())
-  providerId    String        @map("provider_id")
+  id            String         @id @default(cuid())
+  providerId    String         @map("provider_id")
   title         String
   description   String?
   size          Int
-  ticketPrice   Decimal       @db.Decimal(12, 2) @map("ticket_price")
-  currency      String        @default("ETB")
-  status        LotteryStatus @default(DRAFT)
-  startsAt      DateTime?     @map("starts_at")
-  endsAt        DateTime?     @map("ends_at")
-  provider      Provider      @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  ticketPrice   Decimal        @map("ticket_price") @db.Decimal(12, 2)
+  currency      String         @default("ETB")
+  status        LotteryStatus  @default(DRAFT)
+  startsAt      DateTime?      @map("starts_at")
+  endsAt        DateTime?      @map("ends_at")
+  provider      Provider       @relation(fields: [providerId], references: [id], onDelete: Restrict)
   lots          Lot[]
   payments      Payment[]
   result        Result?
@@ -149,24 +157,24 @@ model Lottery {
   notifications Notification[]
   disputes      Dispute[]
   reviews       Review[]
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
 
   @@map("lotteries")
 }
 
 model Lot {
-  id            String   @id @default(cuid())
-  lotteryId     String   @map("lottery_id")
-  lotNumber     Int      @map("lot_number")
-  playerId      String?  @map("player_id")
+  id            String    @id @default(cuid())
+  lotteryId     String    @map("lottery_id")
+  lotNumber     Int       @map("lot_number")
+  playerId      String?   @map("player_id")
   status        LotStatus @default(AVAILABLE)
-  lottery       Lottery  @relation(fields: [lotteryId], references: [id], onDelete: Cascade)
-  player        Player?  @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  lottery       Lottery   @relation(fields: [lotteryId], references: [id], onDelete: Cascade)
+  player        Player?   @relation(fields: [playerId], references: [id], onDelete: SetNull)
   payments      Payment[]
-  winningResult Result?  @relation("WinningLot")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  winningResult Result?   @relation("WinningLot")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   @@unique([lotteryId, lotNumber])
   @@map("lots")
