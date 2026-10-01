@@ -102,8 +102,9 @@ model Provider {
   id               String                  @id @default(cuid())
   userId           String                  @unique @map("user_id")
   displayName      String                  @map("display_name")
-  phone            String
+  phone            String                  @unique
   status           ProviderStatus          @default(PENDING)
+  verifiedAt       DateTime?               @map("verified_at")
   user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   paymentAccounts  ProviderPaymentAccount[]
   lotteries        Lottery[]
